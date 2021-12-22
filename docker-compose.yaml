@@ -1,0 +1,37 @@
+version: "3.9"
+
+services:
+  sample-app:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    volumes:
+      - ~/.aws:/root/.aws
+      - ./:/usr/src/app
+    environment:
+      - PORT=3000
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_RESOURCE_ATTRIBUTES=service.namespace=Monitoring,service.name=SampleTracingApp
+      - AWS_REGION=eu-west-1
+    ports:
+      - "3000:3000"
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.40.0
+    command: ["--config=/etc/ecs/otel-instance-metrics-config.yaml"]
+    environment:
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN}
+    volumes:
+      - ./infrastructure/opentelemetry/local/otel-instance-metrics-config.yaml:/etc/ecs/otel-instance-metrics-config.yaml
+    ports:
+      - "13133"       # health_check
+      - "4317:4317"   # OTel Collector exporter EP gRPC default port
+      - "4318:4318"   # OTel Collector exporter EP http default port (/v1/metrics, /v1/traces, /v1/logs)
+
+  # @goto http://localhost:9411/zipkin for UI
+  zipkin-all-in-one:
+    image: openzipkin/zipkin:latest
+    ports:
+      - "9411:9411"

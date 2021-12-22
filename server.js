@@ -1,45 +1,18 @@
-'use strict';
+const express = require('express');
+const app = express();
+const controller = require('./controller');
 
-const api = require('@opentelemetry/api');
-const tracer = require('./tracer')('sample-tracing-app');
-// eslint-disable-next-line import/order
-const http = require('http');
+app.get('/s3-list', (request, response) => {
+    console.log(JSON.stringify(request.headers));
+    controller.listS3(request, response);
+})
 
-/** Starts a HTTP server that receives requests on sample server port. */
-function startServer(port) {
-    // Creates a server
-    const server = http.createServer(handleRequest);
-    // Starts the server
-    server.listen(port, (err) => {
-        if (err) {
-            throw err;
-        }
-        console.log(`Node HTTP listening on ${port}`);
-    });
-}
+app.get('/http', (request, response) => {
+    controller.httpCall(request, response);
+})
 
-/** A function which handles requests and send response. */
-function handleRequest(request, response) {
-    const currentSpan = api.trace.getSpan(api.context.active());
-    // display traceid in the terminal
-    console.log(`traceid: ${currentSpan.spanContext().traceId}`);
-    const span = tracer.startSpan('handleRequest', {
-        kind: 1, // server
-        attributes: { key: 'value' },
-    });
-    // Annotate our span to capture metadata about the operation
-    span.addEvent('invoking handleRequest');
-
-    const body = [];
-    request.on('error', (err) => console.log(err));
-    request.on('data', (chunk) => body.push(chunk));
-    request.on('end', () => {
-        // deliberately sleeping to mock some action.
-        setTimeout(() => {
-            span.end();
-            response.end('Hello World!');
-        }, 2000);
-    });
-}
-
-startServer(3000);
+const server = app.listen(3000, function () {
+    const host = server.address().address
+    const port = server.address().port
+    console.log("Example app listening at http://%s:%s", host, port)
+})

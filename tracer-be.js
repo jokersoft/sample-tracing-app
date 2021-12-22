@@ -3,18 +3,11 @@
 const opentelemetry = require('@opentelemetry/api');
 const { registerInstrumentations } = require('@opentelemetry/instrumentation');
 const { NodeTracerProvider } = require('@opentelemetry/sdk-trace-node');
-const { WebTracerProvider } = require('@opentelemetry/sdk-trace-web');
 const { Resource } = require('@opentelemetry/resources');
 const { SemanticResourceAttributes } = require('@opentelemetry/semantic-conventions');
-const { SimpleSpanProcessor } = require('@opentelemetry/sdk-trace-base');
 const { BatchSpanProcessor } = require('@opentelemetry/sdk-trace-base');
-const { ZipkinExporter } = require('@opentelemetry/exporter-zipkin');
 const { HttpInstrumentation } = require('@opentelemetry/instrumentation-http');
 const { OTLPTraceExporter } = require('@opentelemetry/exporter-trace-otlp-http');
-
-const EXPORTER = process.env.EXPORTER || '';
-
-// TODO: WebTracerProvider vs NodeTracerProvider
 
 module.exports = (serviceName) => {
     const provider = new NodeTracerProvider({
@@ -25,13 +18,16 @@ module.exports = (serviceName) => {
 
     const options = {
         headers: {
-            'custom-header': 'header-value',
+            'Content-Type': 'application/json',
         },
-        url: 'https://zipkin.requestcatcher.com/'
+        attributes : {
+            'attr': 'attr-value',
+            'service.name': 'sample-tracing-app',
+        },
     }
 
-    let exporter;
-    exporter = new OTLPTraceExporter(options);
+    console.log(options);
+    let exporter = new OTLPTraceExporter(options);
 
     provider.addSpanProcessor(new BatchSpanProcessor(exporter, {
         // The maximum queue size. After the size is reached spans are dropped.
@@ -54,5 +50,5 @@ module.exports = (serviceName) => {
         ],
     });
 
-    return opentelemetry.trace.getTracer('sample-tracing-app');
+    return opentelemetry.trace.getTracer('sample-tracing-app-be');
 };
