@@ -2,13 +2,13 @@ const express = require('express');
 const app = express();
 const controller = require('./controller');
 
+app.get('/http/:subCall', (request, response) => {
+    controller.httpCall(request, response, request.params.subCall);
+})
+
 app.get('/s3-list', (request, response) => {
     console.log(JSON.stringify(request.headers));
     controller.listS3(request, response);
-})
-
-app.get('/http', (request, response) => {
-    controller.httpCall(request, response);
 })
 
 const server = app.listen(3000, function () {

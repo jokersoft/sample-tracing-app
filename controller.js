@@ -3,16 +3,53 @@ const http = require('http');
 const AWS = require('aws-sdk');
 
 const api = require('@opentelemetry/api');
-const tracerFE = require('./tracer-be')('sample-tracing-app-fe');
+const tracerFE = require('./tracer-fe')('sample-tracing-app-fe');
 const tracerBE = require('./tracer-be')('sample-tracing-app-be');
 
 AWS.config.update({region: 'eu-west-1'});
 const port = process.env.PORT ?? DEFAULT_PORT;
 
+const httpCall = (request, response, subCall) => {
+    const options = {
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        hostname: 'localhost',
+        port: port,
+        path: '/' + subCall,
+        method: 'GET',
+    }
+
+    const span = tracerFE.startSpan('simulateHttpCall', {
+        kind: 2, // client
+        attributes: { key: 'value-fe' },
+    });
+
+    // Annotate our span to capture metadata about the operation
+    span.addEvent('invoking httpCall');
+
+    let responseData = '';
+    const outgoingRequest = http.request(options, outgoingResponse => {
+        outgoingResponse.on('data', (chunk) => {
+            responseData += chunk;
+            console.log(responseData);
+        });
+    })
+    outgoingRequest.on('error', error => {
+        console.error(error);
+    })
+    outgoingRequest.end();
+
+    span.end();
+
+    return response.status(202).json(responseData);
+}
+
 const listS3 = (request, response) => {
-    // TODO: get current span
-    // const currentSpan = api.trace.getSpan(api.context.active());
-    // console.log(`traceid: ${currentSpan.spanContext().traceId}`);
+    // const parentSpan = api.trace.getSpan(api.context.active());
+    // console.log(`parentSpan: ${currentSpan.spanContext().traceId}`);
+    // return response.send(JSON.stringify(request.headers));
+
     const span = tracerBE.startSpan('listS3', {
         kind: 1, // server
         attributes: { key: 'value-be' },
@@ -25,45 +62,16 @@ const listS3 = (request, response) => {
     s3.listBuckets(function(err, data) {
         span.end();
         if (err) {
+            console.log('err:');
+            console.log((JSON.stringify(err)));
             return response.send(JSON.stringify(err));
         } else {
+            console.log('data:');
+            console.log((JSON.stringify(data.Buckets)));
             return response.send(JSON.stringify(data.Buckets));
         }
     });
 }
 
-const httpCall = (request, response) => {
-    const options = {
-        hostname: 'localhost',
-        port: port,
-        path: '/s3-list',
-        method: 'GET'
-    }
-
-    const span = tracerFE.startSpan('httpCall', {
-        kind: 2, // client
-        attributes: { key: 'value-fe' },
-    });
-    // Annotate our span to capture metadata about the operation
-    span.addEvent('invoking httpCall');
-
-    const req = http.request(options, res => {
-        console.log(`statusCode: ${res.statusCode}`)
-
-        res.on('data', d => {
-            process.stdout.write(d);
-        })
-    })
-
-    req.on('error', error => {
-        console.error(error);
-    })
-
-    req.end();
-    span.end();
-
-    return response.send('');
-}
-
+module.exports.httpCall = (request, response, subCall) => { return httpCall(request, response, subCall); }
 module.exports.listS3 = (request, response) => { return listS3(request, response); }
-module.exports.httpCall = (request, response) => { return httpCall(request, response); }

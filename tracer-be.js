@@ -8,12 +8,16 @@ const { SemanticResourceAttributes } = require('@opentelemetry/semantic-conventi
 const { BatchSpanProcessor } = require('@opentelemetry/sdk-trace-base');
 const { HttpInstrumentation } = require('@opentelemetry/instrumentation-http');
 const { OTLPTraceExporter } = require('@opentelemetry/exporter-trace-otlp-http');
+const { AwsInstrumentation } = require('@opentelemetry/instrumentation-aws-sdk');
 
 module.exports = (serviceName) => {
     const provider = new NodeTracerProvider({
         resource: new Resource({
             [SemanticResourceAttributes.SERVICE_NAME]: serviceName,
         }),
+        plugins: {
+            'aws-sdk': { enabled: false, path: 'opentelemetry-plugin-aws-sdk' }
+        }
     });
 
     const options = {
@@ -26,7 +30,7 @@ module.exports = (serviceName) => {
         },
     }
 
-    console.log(options);
+    console.log('tracer-be...');
     let exporter = new OTLPTraceExporter(options);
 
     provider.addSpanProcessor(new BatchSpanProcessor(exporter, {
@@ -44,9 +48,20 @@ module.exports = (serviceName) => {
     provider.register();
 
     registerInstrumentations({
-        // // when boostraping with lerna for testing purposes
+        provider,
         instrumentations: [
-            new HttpInstrumentation(),
+            new HttpInstrumentation({
+                requireParentforOutgoingSpans: true,
+                requireParentforIncomingSpans: true,
+            }),
+            new AwsInstrumentation({
+                // see https://www.npmjs.com/package/opentelemetry-instrumentation-aws-sdk
+                preRequestHook: (span, request) => {
+                    if (span.serviceName === 's3') {
+                        span.setAttribute("s3.bucket.name", request.commandInput["Bucket"]);
+                    }
+                }
+            })
         ],
     });
 

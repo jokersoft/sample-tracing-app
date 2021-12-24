@@ -15,14 +15,30 @@ module.exports = (serviceName) => {
         }),
     });
 
-    console.log('tracer-fe: ');
+    console.log('tracer-fe...');
     let exporter = new ConsoleSpanExporter();
     provider.addSpanProcessor(new SimpleSpanProcessor(exporter));
     provider.register();
 
     registerInstrumentations({
         instrumentations: [
-            new HttpInstrumentation(),
+            new HttpInstrumentation({
+                requireParentforOutgoingSpans: true,
+                // requestHook: (span, request) => {
+                //     // https://www.w3.org/TR/trace-context/
+                //     if (request instanceof ClientRequest) {
+                //         const version = Number(1).toString(16)
+                //         const traceData = `${version}-${span.context().traceId}-${
+                //             span.context().spanId
+                //         }-${span.context().traceFlags}`
+                //         request.setHeader('traceparent', traceData)
+                //         const traceState = span.context().traceState
+                //         if (traceState != null) {
+                //             request.setHeader('tracestate', traceState?.serialize())
+                //         }
+                //     }
+                // },
+            }),
         ],
     });
 
