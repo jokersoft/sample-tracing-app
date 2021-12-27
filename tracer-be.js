@@ -9,6 +9,7 @@ const { BatchSpanProcessor } = require('@opentelemetry/sdk-trace-base');
 const { HttpInstrumentation } = require('@opentelemetry/instrumentation-http');
 const { OTLPTraceExporter } = require('@opentelemetry/exporter-trace-otlp-http');
 const { AwsInstrumentation } = require('@opentelemetry/instrumentation-aws-sdk');
+const { ExpressInstrumentation } = require("@opentelemetry/instrumentation-express");
 
 module.exports = (serviceName) => {
     const provider = new NodeTracerProvider({
@@ -20,7 +21,7 @@ module.exports = (serviceName) => {
         }
     });
 
-    const options = {
+    const exporterOptions = {
         headers: {
             'Content-Type': 'application/json',
         },
@@ -31,7 +32,7 @@ module.exports = (serviceName) => {
     }
 
     console.log('tracer-be...');
-    let exporter = new OTLPTraceExporter(options);
+    let exporter = new OTLPTraceExporter(exporterOptions);
 
     provider.addSpanProcessor(new BatchSpanProcessor(exporter, {
         // The maximum queue size. After the size is reached spans are dropped.
@@ -50,6 +51,7 @@ module.exports = (serviceName) => {
     registerInstrumentations({
         provider,
         instrumentations: [
+            new ExpressInstrumentation(),
             new HttpInstrumentation({
                 requireParentforOutgoingSpans: true,
                 requireParentforIncomingSpans: true,
@@ -65,5 +67,5 @@ module.exports = (serviceName) => {
         ],
     });
 
-    return opentelemetry.trace.getTracer('sample-tracing-app-be');
+    return opentelemetry.trace.getTracer(serviceName);
 };

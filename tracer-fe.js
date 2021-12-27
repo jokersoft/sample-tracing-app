@@ -2,45 +2,49 @@
 
 const opentelemetry = require('@opentelemetry/api');
 const { registerInstrumentations } = require('@opentelemetry/instrumentation');
-const { WebTracerProvider } = require('@opentelemetry/sdk-trace-web');
-const { Resource } = require('@opentelemetry/resources');
-const { SemanticResourceAttributes } = require('@opentelemetry/semantic-conventions');
-const { ConsoleSpanExporter, SimpleSpanProcessor } = require('@opentelemetry/sdk-trace-base');
 const { HttpInstrumentation } = require('@opentelemetry/instrumentation-http');
+const { ExpressInstrumentation } = require('@opentelemetry/instrumentation-express');
+const { NodeTracerProvider } = require('@opentelemetry/sdk-trace-node');
+const { Resource } = require('@opentelemetry/resources');
+const { SemanticResourceAttributes: ResourceAttributesSC } = require('@opentelemetry/semantic-conventions');
+const { ConsoleSpanExporter, SimpleSpanProcessor } = require('@opentelemetry/sdk-trace-base');
+const { OTLPTraceExporter } = require("@opentelemetry/exporter-trace-otlp-http");
 
 module.exports = (serviceName) => {
-    const provider = new WebTracerProvider({
+    const provider = new NodeTracerProvider({
         resource: new Resource({
-            [SemanticResourceAttributes.SERVICE_NAME]: serviceName,
+            [ResourceAttributesSC.SERVICE_NAME]: serviceName,
         }),
     });
 
+    const exporterOptions = {
+        headers: {
+            'Content-Type': 'application/json',
+            // possible authentication here
+        },
+        attributes : {
+            'attr': 'attr-value',
+            'service.name': 'sample-tracing-app',
+        },
+    }
+
     console.log('tracer-fe...');
-    let exporter = new ConsoleSpanExporter();
-    provider.addSpanProcessor(new SimpleSpanProcessor(exporter));
-    provider.register();
+    const exporter = new OTLPTraceExporter(exporterOptions);
+    // const exporter = new ConsoleSpanExporter();
 
     registerInstrumentations({
+        tracerProvider: provider,
         instrumentations: [
-            new HttpInstrumentation({
-                requireParentforOutgoingSpans: true,
-                // requestHook: (span, request) => {
-                //     // https://www.w3.org/TR/trace-context/
-                //     if (request instanceof ClientRequest) {
-                //         const version = Number(1).toString(16)
-                //         const traceData = `${version}-${span.context().traceId}-${
-                //             span.context().spanId
-                //         }-${span.context().traceFlags}`
-                //         request.setHeader('traceparent', traceData)
-                //         const traceState = span.context().traceState
-                //         if (traceState != null) {
-                //             request.setHeader('tracestate', traceState?.serialize())
-                //         }
-                //     }
-                // },
-            }),
+            // Express instrumentation expects HTTP layer to be instrumented
+            HttpInstrumentation,
+            ExpressInstrumentation,
         ],
     });
 
-    return opentelemetry.trace.getTracer('sample-tracing-app-fe');
+    provider.addSpanProcessor(new SimpleSpanProcessor(exporter));
+
+    // Initialize the OpenTelemetry APIs to use the NodeTracerProvider bindings
+    provider.register();
+
+    return opentelemetry.trace.getTracer('express-example');
 };

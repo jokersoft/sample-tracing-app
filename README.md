@@ -12,3 +12,8 @@ https://www.npmjs.com/package/@opentelemetry/exporter-collector-grpc
 
 #### OTLP/HTTP
 https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/otlp.md#otlpgrpc-default-port
+
+### B3 Header Propagation
+https://www.npmjs.com/package/@opentelemetry/propagator-b3
+https://github.com/openzipkin/b3-propagation
+https://github.com/open-telemetry/opentelemetry-js/tree/main/packages/opentelemetry-propagator-b3
