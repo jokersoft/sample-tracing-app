@@ -18,8 +18,10 @@ app.get('/s3-list', async (request, response) => {
   console.log(JSON.stringify(request.headers));
 
   // HERE: after this movement of code 2 trace spans goes missing (7 vs 9)
+  console.log('const result = controller.listS3();');
   const result = controller.listS3();
 
+  console.log('returning...');
   return response.status(200).send(JSON.stringify(result));
 });
 
