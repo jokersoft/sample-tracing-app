@@ -1,6 +1,8 @@
 const DEFAULT_LISTEN_PORT = '3000';
 const DEFAULT_SERVER_PORT = '8080';
 
+const SECRET = process.env.SECRET;
+
 const LISTEN_PORT = process.env.LISTEN_PORT ?? DEFAULT_LISTEN_PORT;
 const SERVER_PORT = process.env.SERVER_PORT ?? DEFAULT_SERVER_PORT;
 const SERVER_HOST = process.env.SERVER_HOST;
@@ -35,7 +37,11 @@ app.get('/http/:subCall', (request, response) => {
 
     api.context.with(api.trace.setSpan(api.ROOT_CONTEXT, span), async () => {
         try {
-            const res = await axios.get(`http://${SERVER_HOST}:${SERVER_PORT}/s3-list`);
+            const res = await axios.get(`http://${SERVER_HOST}:${SERVER_PORT}/s3-list`, {
+                headers: {
+                    'authorization': SECRET
+                }
+            });
             console.log('status:', res.statusText);
             console.log('client response headers: ', JSON.stringify(res.headers));
             span.setStatus({ code: api.SpanStatusCode.OK });
