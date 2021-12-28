@@ -16,4 +16,4 @@ const listS3 = () => {
     });
 }
 
-module.exports.listS3 = (request, response) => { return listS3(request, response); }
+module.exports.listS3 = () => { return listS3; }

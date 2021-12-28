@@ -8,29 +8,19 @@ const controller = require('./controller');
 
 const express = require('express');
 const app = express();
-const AWS = require("aws-sdk");
 const axios = require('axios').default;
 
 app.use(express.json());
+
 app.get('/health', (request, response) => response.status(200).send("HEALTHY"));
 app.get('/s3-list', async (request, response) => {
   console.log('server request.headers:');
   console.log(JSON.stringify(request.headers));
 
-  // controller.listS3(request, response)
+  // HERE: after this movement of code 2 trace spans goes missing (7 vs 9)
+  const result = controller.listS3();
 
-  const s3 = new AWS.S3({apiVersion: '2006-03-01'});
-  s3.listBuckets(function(err, data) {
-    if (err) {
-      console.log('err:');
-      console.log((JSON.stringify(err)));
-      return response.status(500).send(JSON.stringify(err));
-    } else {
-      console.log('data:');
-      console.log((JSON.stringify(data.Buckets)));
-      return response.status(200).send(JSON.stringify(data.Buckets));
-    }
-  });
+  return response.status(200).send(JSON.stringify(result));
 });
 
 const server = app.listen(PORT, () => {
