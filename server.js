@@ -3,7 +3,7 @@
 const DEFAULT_PORT = '8080';
 const PORT = process.env.PORT ?? DEFAULT_PORT;
 
-require('./tracer-be')('sample-tracing-app-be');
+require('./tracer-be')('server');
 const controller = require('./controller');
 
 const express = require('express');

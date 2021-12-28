@@ -7,7 +7,7 @@ const SERVER_HOST = process.env.SERVER_HOST;
 
 const express = require('express');
 const app = express();
-const tracerFe = require('./tracer-fe')('sample-tracing-app-fe');
+const tracerFe = require('./tracer-fe')('client');
 const api = require('@opentelemetry/api');
 const axios = require('axios').default;
 
@@ -41,7 +41,7 @@ app.get('/http/:subCall', (request, response) => {
             span.setStatus({ code: api.SpanStatusCode.OK });
         } catch (e) {
             console.log('failed:', e.message);
-            console.log('client response headers: ', JSON.stringify(res.headers));
+            console.log('client response headers: ', JSON.stringify(e));
             span.setStatus({ code: api.SpanStatusCode.ERROR, message: e.message });
         }
         span.end();
