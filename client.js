@@ -9,7 +9,7 @@ const express = require('express');
 const app = express();
 const tracerFe = require('./tracer-fe')('client');
 const api = require('@opentelemetry/api');
-const axios = require('axios').default;
+const http = require("http");
 
 app.get('/http/:subCall', (globalRequest, globalResponse) => {
     console.log('http EP hit');
@@ -17,13 +17,14 @@ app.get('/http/:subCall', (globalRequest, globalResponse) => {
         headers: {
             'Content-Type': 'application/json',
         },
-        hostname: process.env.SERVER_HOST,
+        hostname: SERVER_HOST,
         port: SERVER_PORT,
         path: '/' + globalRequest.params.subCall,
         method: 'GET',
     }
 
-    const span = tracerFe.startSpan('simulateClientHttpCall', {
+    // Start manual span
+    const span = tracerFe.startSpan('simulateclienthttpcall', {
         kind: api.SpanKind.CLIENT,
         attributes: { key: 'value-fe' },
     });
@@ -31,19 +32,30 @@ app.get('/http/:subCall', (globalRequest, globalResponse) => {
     // Annotate our span to capture metadata about the operation
     span.addEvent('invoking httpCall');
 
-    axios.get(`http://${SERVER_HOST}:${SERVER_PORT}/s3-list`)
-        .then(response => {
+    const req = http.request(options, res => {
+        console.log(`statusCode: ${res.statusCode}`)
+        let responseData = '';
+        res.on('data', function (chunk) {responseData += chunk;});
+        res.on('end', function () {
             span.setStatus({ code: api.SpanStatusCode.OK });
+            // End manual span
             span.end();
 
-            return globalResponse.status(202).send(response.data);
-        })
-        .catch(error => {
-            span.setStatus({ code: api.SpanStatusCode.ERROR, message: error.message });
-            span.end();
-
-            return globalResponse.status(500).send(error.message);
+            return globalResponse.status(202).send(responseData);
         });
+    })
+
+    req.on('error', error => {
+        console.error('error: ');
+        console.error(error);
+        span.setStatus({ code: api.SpanStatusCode.ERROR, message: error.message });
+        // End manual span
+        span.end();
+
+        return globalResponse.status(500).send(error.message);
+    })
+
+    req.end()
 })
 
 const server = app.listen(LISTEN_PORT, function () {
