@@ -14,7 +14,6 @@ function listS3(request, response) {
     console.log('inside listS3');
     const s3 = new AWS.S3({apiVersion: '2006-03-01'});
     s3.listBuckets(function (awsError, data) {
-        console.log('inside s3.listBuckets');
         if (awsError) {
             responseMessage = awsError.message;
 
@@ -23,13 +22,15 @@ function listS3(request, response) {
             } else {
                 responseCode = 500;
             }
+
+            return response.status(responseCode).send(responseMessage);
         } else {
             responseCode = 200;
             responseMessage = JSON.stringify(data.Buckets);
+
+            return response.status(responseCode).send(responseMessage);
         }
     });
-
-    return response.status(responseCode).send(responseMessage);
 }
 
 function s2s(request, response) {
