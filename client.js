@@ -31,23 +31,25 @@ app.get('/http/:subCall', (request, response) => {
     // Annotate our span to capture metadata about the operation
     span.addEvent('invoking httpCall');
 
-    let responseData = '';
-
-    api.context.with(api.trace.setSpan(api.ROOT_CONTEXT, span), async () => {
+    api.context.with(api.trace.setSpan(api.ROOT_CONTEXT, span), async (responseData, responseCode) => {
         try {
             const res = await axios.get(`http://${SERVER_HOST}:${SERVER_PORT}/s3-list`);
-            console.log('status:', res.statusText);
-            console.log('client response headers: ', JSON.stringify(res.headers));
-            span.setStatus({ code: api.SpanStatusCode.OK });
-        } catch (e) {
-            console.log('failed:', e.message);
-            console.log('client response headers: ', JSON.stringify(e));
-            span.setStatus({ code: api.SpanStatusCode.ERROR, message: e.message });
-        }
-        span.end();
-    });
 
-    return response.status(202).json(responseData);
+            span.setStatus({ code: api.SpanStatusCode.OK });
+            span.end();
+
+            responseData = res.data;
+            responseCode = 202;
+
+            return response.status(responseCode).send(responseData);
+        } catch (e) {
+            console.error('with: ', JSON.stringify(e));
+            span.setStatus({ code: api.SpanStatusCode.ERROR, message: e.message });
+            span.end();
+
+            return response.status(500).send(e.message);
+        }
+    });
 })
 
 const server = app.listen(LISTEN_PORT, function () {

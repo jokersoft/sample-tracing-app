@@ -12,17 +12,19 @@ const axios = require('axios').default;
 
 app.use(express.json());
 
-app.get('/health', (request, response) => response.status(200).send("HEALTHY"));
+app.get('/health', (request, response) => {
+  controller.health(request, response);
+});
+
+app.get('/s2s', (request, response) => {
+  controller.s2s(request, response);
+});
+
 app.get('/s3-list', async (request, response) => {
   console.log('server request.headers:');
   console.log(JSON.stringify(request.headers));
 
-  // HERE: after this movement of code 2 trace spans goes missing (7 vs 9)
-  console.log('const result = controller.listS3();');
-  const result = controller.listS3();
-
-  console.log('returning...');
-  return response.status(200).send(JSON.stringify(result));
+  controller.listS3(request, response);
 });
 
 const server = app.listen(PORT, () => {
