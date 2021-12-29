@@ -4,6 +4,7 @@ const DEFAULT_SERVER_PORT = '8080';
 const LISTEN_PORT = process.env.LISTEN_PORT ?? DEFAULT_LISTEN_PORT;
 const SERVER_PORT = process.env.SERVER_PORT ?? DEFAULT_SERVER_PORT;
 const SERVER_HOST = process.env.SERVER_HOST;
+const SECRET = process.env.SECRET;
 
 const express = require('express');
 const app = express();
@@ -12,14 +13,14 @@ const api = require('@opentelemetry/api');
 const http = require("http");
 
 app.get('/http/:subCall', (globalRequest, globalResponse) => {
-    console.log('http EP hit');
     const options = {
         headers: {
             'Content-Type': 'application/json',
+            'authorization': SECRET,
         },
         hostname: SERVER_HOST,
         port: SERVER_PORT,
-        path: '/' + globalRequest.params.subCall,
+        path: '/api/' + globalRequest.params.subCall,
         method: 'GET',
     }
 
@@ -41,13 +42,11 @@ app.get('/http/:subCall', (globalRequest, globalResponse) => {
             // End manual span
             span.end();
 
-            return globalResponse.status(202).send(responseData);
+            return globalResponse.status(res.statusCode).send(responseData);
         });
     })
 
     req.on('error', error => {
-        console.error('error: ');
-        console.error(error);
         span.setStatus({ code: api.SpanStatusCode.ERROR, message: error.message });
         // End manual span
         span.end();

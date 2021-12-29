@@ -3,9 +3,42 @@ AWS.config.update({region: 'eu-west-1'});
 
 const DEFAULT_PORT = '8080';
 const PORT = process.env.PORT ?? DEFAULT_PORT;
+const SECRET = process.env.SECRET;
 
-const api = require('@opentelemetry/api');
 const http = require('http');
+const express = require('express');
+const api = require("@opentelemetry/api");
+
+const authMiddleware = (req, res, next) => {
+    const { authorization } = req.headers;
+    if (authorization && authorization.includes(SECRET)) {
+        console.debug('authorization passed');
+        next();
+    } else {
+        res.sendStatus(403);
+    }
+};
+
+function gateway() {
+    const router = express.Router();
+    router.get('/204', (request, response) => {
+        response.status(204).send();
+    });
+
+    router.get('/s3-list', (request, response) => {
+        listS3(request, response);
+    });
+
+    router.get('/s2s', (request, response) => {
+        s2s(request, response);
+    });
+
+    router.get('/health', (request, response) => {
+        health(request, response);
+    });
+
+    return router;
+}
 
 function listS3(request, response) {
     let responseCode = 500;
@@ -33,8 +66,7 @@ function listS3(request, response) {
     });
 }
 
-function s2s(request, response) {
-    console.log('callS2S hit');
+function s2s(globalRequest, globalResponse) {
     const options = {
         hostname: 'localhost',
         port: PORT,
@@ -42,16 +74,23 @@ function s2s(request, response) {
         method: 'GET',
     }
 
-    console.log('http.get(options);');
-    const result = http.get(options);
+    const req = http.request(options, res => {
+        let responseData = '';
+        res.on('data', function (chunk) {responseData += chunk;});
+        res.on('end', function () {
+            return globalResponse.status(res.statusCode).send(responseData);
+        });
+    })
 
-    return response.status(200).send(JSON.stringify(result));
+    req.on('error', error => {
+        return globalResponse.status(500).send(error.message);
+    })
 }
 
 function health(request, response) {
     response.status(200).send('{"status":"OK"}');
 }
 
-module.exports.listS3 = (request, response) => listS3(request, response);
-module.exports.s2s = (request, response) => s2s(request, response);
 module.exports.health = (request, response) => health(request, response);
+module.exports.gateway = gateway;
+module.exports.authMiddleware = authMiddleware;
