@@ -11,7 +11,7 @@ const tracerFe = require('./tracer-fe')('client');
 const api = require('@opentelemetry/api');
 const axios = require('axios').default;
 
-app.get('/http/:subCall', (request, response) => {
+app.get('/http/:subCall', (globalRequest, globalResponse) => {
     console.log('http EP hit');
     const options = {
         headers: {
@@ -19,11 +19,11 @@ app.get('/http/:subCall', (request, response) => {
         },
         hostname: process.env.SERVER_HOST,
         port: SERVER_PORT,
-        path: '/' + request.params.subCall,
+        path: '/' + globalRequest.params.subCall,
         method: 'GET',
     }
 
-    const span = tracerFe.startSpan('simulateHttpCall', {
+    const span = tracerFe.startSpan('simulateClientHttpCall', {
         kind: api.SpanKind.CLIENT,
         attributes: { key: 'value-fe' },
     });
@@ -31,25 +31,19 @@ app.get('/http/:subCall', (request, response) => {
     // Annotate our span to capture metadata about the operation
     span.addEvent('invoking httpCall');
 
-    api.context.with(api.trace.setSpan(api.ROOT_CONTEXT, span), async (responseData, responseCode) => {
-        try {
-            const res = await axios.get(`http://${SERVER_HOST}:${SERVER_PORT}/s3-list`);
-
+    axios.get(`http://${SERVER_HOST}:${SERVER_PORT}/s3-list`)
+        .then(response => {
             span.setStatus({ code: api.SpanStatusCode.OK });
             span.end();
 
-            responseData = res.data;
-            responseCode = 202;
-
-            return response.status(responseCode).send(responseData);
-        } catch (e) {
-            console.error('with: ', JSON.stringify(e));
-            span.setStatus({ code: api.SpanStatusCode.ERROR, message: e.message });
+            return globalResponse.status(202).send(response.data);
+        })
+        .catch(error => {
+            span.setStatus({ code: api.SpanStatusCode.ERROR, message: error.message });
             span.end();
 
-            return response.status(500).send(e.message);
-        }
-    });
+            return globalResponse.status(500).send(error.message);
+        });
 })
 
 const server = app.listen(LISTEN_PORT, function () {
