@@ -1,18 +1,22 @@
+'use strict';
+
+const DEFAULT_PORT = '8080';
+const PORT = process.env.PORT ?? DEFAULT_PORT;
+
+require('./tracer-be')('server');
+const controller = require('./controller');
+const { authMiddleware, gateway } = require('./controller');
 const express = require('express');
 const app = express();
-const controller = require('./controller');
 
-app.get('/s3-list', (request, response) => {
-    console.log(JSON.stringify(request.headers));
-    controller.listS3(request, response);
-})
+app.use(express.json());
+app.use('/api', authMiddleware, gateway());
+app.get('/health', (request, response) => {
+  controller.health(request, response);
+});
 
-app.get('/http', (request, response) => {
-    controller.httpCall(request, response);
-})
-
-const server = app.listen(3000, function () {
-    const host = server.address().address
-    const port = server.address().port
-    console.log("Example app listening at http://%s:%s", host, port)
-})
+const server = app.listen(PORT, () => {
+  const host = server.address().address
+  const port = server.address().port
+  console.log("Server is listening at http://%s:%s", host, port)
+});

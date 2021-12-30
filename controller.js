@@ -1,69 +1,96 @@
-const DEFAULT_PORT = '3000';
-const http = require('http');
 const AWS = require('aws-sdk');
-
-const api = require('@opentelemetry/api');
-const tracerFE = require('./tracer-be')('sample-tracing-app-fe');
-const tracerBE = require('./tracer-be')('sample-tracing-app-be');
-
 AWS.config.update({region: 'eu-west-1'});
-const port = process.env.PORT ?? DEFAULT_PORT;
 
-const listS3 = (request, response) => {
-    // TODO: get current span
-    // const currentSpan = api.trace.getSpan(api.context.active());
-    // console.log(`traceid: ${currentSpan.spanContext().traceId}`);
-    const span = tracerBE.startSpan('listS3', {
-        kind: 1, // server
-        attributes: { key: 'value-be' },
+const DEFAULT_PORT = '8080';
+const PORT = process.env.PORT ?? DEFAULT_PORT;
+const SECRET = process.env.SECRET;
+
+const http = require('http');
+const express = require('express');
+const api = require("@opentelemetry/api");
+
+const authMiddleware = (req, res, next) => {
+    const { authorization } = req.headers;
+    if (authorization && authorization.includes(SECRET)) {
+        console.debug('authorization passed');
+        next();
+    } else {
+        res.sendStatus(403);
+    }
+};
+
+function gateway() {
+    const router = express.Router();
+    router.get('/204', (request, response) => {
+        response.status(204).send();
     });
-    // Annotate our span to capture metadata about the operation
-    span.addEvent('invoking listS3');
 
-    let s3 = new AWS.S3({apiVersion: '2006-03-01'});
+    router.get('/s3-list', (request, response) => {
+        listS3(request, response);
+    });
 
-    s3.listBuckets(function(err, data) {
-        span.end();
-        if (err) {
-            return response.send(JSON.stringify(err));
+    router.get('/s2s', (request, response) => {
+        s2s(request, response);
+    });
+
+    router.get('/health', (request, response) => {
+        health(request, response);
+    });
+
+    return router;
+}
+
+function listS3(request, response) {
+    let responseCode = 500;
+    let responseMessage = 'Unhandled';
+
+    console.log('inside listS3');
+    const s3 = new AWS.S3({apiVersion: '2006-03-01'});
+    s3.listBuckets(function (awsError, data) {
+        if (awsError) {
+            responseMessage = awsError.message;
+
+            if (awsError.code === 'InvalidToken') {
+                responseCode = 403;
+            } else {
+                responseCode = 500;
+            }
+
+            return response.status(responseCode).send(responseMessage);
         } else {
-            return response.send(JSON.stringify(data.Buckets));
+            responseCode = 200;
+            responseMessage = JSON.stringify(data.Buckets);
+
+            return response.status(responseCode).send(responseMessage);
         }
     });
 }
 
-const httpCall = (request, response) => {
+function s2s(globalRequest, globalResponse) {
     const options = {
         hostname: 'localhost',
-        port: port,
-        path: '/s3-list',
-        method: 'GET'
+        port: PORT,
+        path: '/health',
+        method: 'GET',
     }
 
-    const span = tracerFE.startSpan('httpCall', {
-        kind: 2, // client
-        attributes: { key: 'value-fe' },
-    });
-    // Annotate our span to capture metadata about the operation
-    span.addEvent('invoking httpCall');
-
     const req = http.request(options, res => {
-        console.log(`statusCode: ${res.statusCode}`)
-
-        res.on('data', d => {
-            process.stdout.write(d);
-        })
+        let responseData = '';
+        res.on('data', function (chunk) {responseData += chunk;});
+        res.on('end', function () {
+            return globalResponse.status(res.statusCode).send(responseData);
+        });
     })
 
     req.on('error', error => {
-        console.error(error);
+        return globalResponse.status(500).send(error.message);
     })
-
-    req.end();
-    span.end();
-
-    return response.send('');
 }
 
-module.exports.listS3 = (request, response) => { return listS3(request, response); }
-module.exports.httpCall = (request, response) => { return httpCall(request, response); }
+function health(request, response) {
+    response.status(200).send('{"status":"OK"}');
+}
+
+module.exports.health = (request, response) => health(request, response);
+module.exports.gateway = gateway;
+module.exports.authMiddleware = authMiddleware;

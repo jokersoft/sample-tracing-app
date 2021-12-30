@@ -1,20 +1,40 @@
 version: "3.9"
 
 services:
-  sample-app:
+  sample-app-client:
     build:
       context: .
       dockerfile: ./Dockerfile
     volumes:
-      - ~/.aws:/root/.aws
       - ./:/usr/src/app
     environment:
-      - PORT=3000
+      - LISTEN_PORT=3000
+      - SERVER_PORT=8080
+      - SERVER_HOST=sample-app-server
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_RESOURCE_ATTRIBUTES=service.namespace=Monitoring,service.name=SampleTracingApp
+      - SECRET=secret_token
+    ports:
+      - "3000:3000"
+    command: ["node", "client.js"]
+
+  sample-app-server:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    volumes:
+      - ./:/usr/src/app
+    environment:
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN}
+      - PORT=8080
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
       - OTEL_RESOURCE_ATTRIBUTES=service.namespace=Monitoring,service.name=SampleTracingApp
       - AWS_REGION=eu-west-1
+      - SECRET=secret_token
     ports:
-      - "3000:3000"
+      - "8080:8080"
 
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.40.0
