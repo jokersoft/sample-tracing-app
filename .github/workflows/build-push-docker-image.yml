@@ -1,4 +1,4 @@
-name: GitHub Actions Demo
+name: docker build && push
 on: [push]
 jobs:
   Explore-GitHub-Actions:
@@ -16,8 +16,10 @@ jobs:
           TAG: ${{ github.ref_name }}
         run: |
           docker compose build sample-app-server
-          docker push yarche/sample-tracing-app:${TAG}
           docker push yarche/sample-tracing-app:latest
+          docker push yarche/sample-tracing-app:${TAG}
+      - name: List tags
+        run: docker image search --list-tags yarche/sample-tracing-app
       - name: List files in the repository
         run: |
           ls ${{ github.workspace }}
