@@ -1,4 +1,4 @@
-# Sample Tracing App
+# Sample Tracing App (Node.js + Opentelemetry Collector + Zipkin) with instrumentation examples
 
 ## local run
 Run containers:
