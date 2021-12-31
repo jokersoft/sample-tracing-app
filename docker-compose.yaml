@@ -2,6 +2,7 @@ version: "3.9"
 
 services:
   sample-app-client:
+    image: yarche/sample-tracing-app:${TAG}
     build:
       context: .
       dockerfile: ./Dockerfile
