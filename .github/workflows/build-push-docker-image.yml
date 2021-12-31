@@ -16,6 +16,8 @@ jobs:
           TAG: ${{ github.ref_name }}
         run: |
           docker compose build sample-app-server
+          docker tag sample-tracing-app_sample-app-server:latest yarche/sample-tracing-app:latest
+          docker tag sample-tracing-app_sample-app-server:latest yarche/sample-tracing-app:${TAG}
           docker push yarche/sample-tracing-app:latest
           docker push yarche/sample-tracing-app:${TAG}
       - name: List tags
