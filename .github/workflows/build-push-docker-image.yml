@@ -22,18 +22,16 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: docker build && push
+      - name: docker build
         env:
           TAG: ${{ github.ref_name }}
         run: |
           docker compose build sample-app-server
           docker tag sample-tracing-app_sample-app-server:latest yarche/sample-tracing-app:latest
           docker tag sample-tracing-app_sample-app-server:latest yarche/sample-tracing-app:${TAG}
+      - name: docker push
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
           docker push yarche/sample-tracing-app:latest
           docker push yarche/sample-tracing-app:${TAG}
-      - name: List tags
-        run: docker image search --list-tags yarche/sample-tracing-app
-      - name: List files in the repository
-        run: |
-          ls ${{ github.workspace }}
-      - run: echo "🍏 This job's status is ${{ job.status }}."
