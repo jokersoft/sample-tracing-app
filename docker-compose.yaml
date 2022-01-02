@@ -50,6 +50,7 @@ services:
       - "13133"       # health_check
       - "4317:4317"   # OTel Collector exporter EP gRPC default port
       - "4318:4318"   # OTel Collector exporter EP http default port (/v1/metrics, /v1/traces, /v1/logs)
+      - "55679:55679" # zpages extension
     depends_on:
       - jaeger
       - zipkin

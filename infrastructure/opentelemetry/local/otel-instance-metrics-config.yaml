@@ -1,5 +1,7 @@
 extensions:
   health_check:
+  # https://github.com/open-telemetry/opentelemetry-collector/blob/main/extension/zpagesextension/README.md:
+  zpages:
 
 receivers:
   otlp:
@@ -19,11 +21,14 @@ exporters:
     endpoint: "http://zipkin:9411/api/v2/spans"
   jaeger_thrift:
     endpoint: "http://jaeger:14268/api/traces"
+  # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/awsxrayexporter
+  awsxray:
+    region: "eu-west-1"
 
 service:
-  extensions: [health_check]
+  extensions: [health_check, zpages]
   pipelines:
     traces:
       receivers: [otlp]
-      exporters: [logging, zipkin, jaeger_thrift]
+      exporters: [logging, zipkin, jaeger_thrift, awsxray]
       processors: [batch]
