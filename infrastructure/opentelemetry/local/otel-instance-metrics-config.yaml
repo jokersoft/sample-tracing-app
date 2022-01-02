@@ -1,7 +1,5 @@
 extensions:
   health_check:
-  # https://github.com/open-telemetry/opentelemetry-collector/blob/main/extension/zpagesextension/README.md:
-  zpages:
 
 receivers:
   otlp:
@@ -26,7 +24,7 @@ exporters:
     region: "eu-west-1"
 
 service:
-  extensions: [health_check, zpages]
+  extensions: [health_check]
   pipelines:
     traces:
       receivers: [otlp]
