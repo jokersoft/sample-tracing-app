@@ -11,3 +11,5 @@ on https://ct-backend.awsapps.com/start#/ with "Command line or programmatic acc
 by copy-pasting command from AWS UI:
 
 ![](images/aws-auth-env-vars.png)
+
+They will further be used in docker-compose.yaml

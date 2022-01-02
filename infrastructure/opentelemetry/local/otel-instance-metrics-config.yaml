@@ -16,16 +16,14 @@ exporters:
   logging:
     loglevel: debug
   zipkin:
-    endpoint: "http://zipkin-all-in-one:9411/api/v2/spans"
+    endpoint: "http://zipkin:9411/api/v2/spans"
+  jaeger_thrift:
+    endpoint: "http://jaeger:14268/api/traces"
 
 service:
   extensions: [health_check]
   pipelines:
     traces:
       receivers: [otlp]
-      exporters: [logging, zipkin]
-      processors: [batch]
-    metrics:
-      receivers: [otlp]
-      exporters: [logging]
+      exporters: [logging, zipkin, jaeger_thrift]
       processors: [batch]

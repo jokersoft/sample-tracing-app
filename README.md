@@ -18,6 +18,9 @@ go to `http://localhost:9411/zipkin/`, press "RUN QUERY" button to see latest tr
 
 And check [zipkin-ui.md](infrastructure/documentation/zipkin-ui.md) for more details.
 
+### To see traces in Jaeger UI
+go to `http://localhost:16686` and search.
+
 # Links
 
 ### http instrumentation

@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
   sample-app-client:
-    image: yarche/sample-tracing-app:${TAG}
+    image: yarche/sample-tracing-app:${TAG:-v1.0.0}
     build:
       context: .
       dockerfile: ./Dockerfile
@@ -50,9 +50,20 @@ services:
       - "13133"       # health_check
       - "4317:4317"   # OTel Collector exporter EP gRPC default port
       - "4318:4318"   # OTel Collector exporter EP http default port (/v1/metrics, /v1/traces, /v1/logs)
+    depends_on:
+      - jaeger
+      - zipkin
 
   # @goto http://localhost:9411/zipkin for UI
-  zipkin-all-in-one:
+  zipkin:
     image: openzipkin/zipkin:latest
     ports:
       - "9411:9411"
+
+  # Jaeger
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "16686:16686" # UI
+      - "14268"       # http trace push EP
+      - "16685"
