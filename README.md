@@ -41,3 +41,11 @@ https://github.com/open-telemetry/opentelemetry-specification/blob/main/specific
 https://www.npmjs.com/package/@opentelemetry/propagator-b3
 https://github.com/openzipkin/b3-propagation
 https://github.com/open-telemetry/opentelemetry-js/tree/main/packages/opentelemetry-propagator-b3
+
+## TODO
+- add draw.io to readme
+- investigate [Sentry exporter](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sentryexporter)
+- add [Grafana](https://grafana.com/grafana/plugins/grafana-x-ray-datasource/)
+- implement response header (`traceId`)
+- implement logging of `traceId`
+- deploy [zpages extension](https://github.com/open-telemetry/opentelemetry-collector/blob/main/extension/zpagesextension/README.md)
