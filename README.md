@@ -1,5 +1,16 @@
 # Sample Tracing App (Node.js + Opentelemetry Collector + Zipkin) with instrumentation examples
 
+This sample app implements following flow:
+![](infrastructure/documentation/images/node-js-tracing-sample-app.png)
+and allows to build/debug Opentelemetry tracing instrumentation.
+
+Includes:
+- sample client app
+- sample server app (with simple auth)
+- [otel-collector](https://github.com/open-telemetry/opentelemetry-collector-contrib) instance
+- [Zipkin](#to-see-traces-in-zipkin-ui)
+- [Jaeger](#to-see-traces-in-jaeger-ui)
+
 ## local run
 Run containers:
 ```shell
